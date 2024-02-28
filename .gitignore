@@ -1,0 +1,3 @@
+*.db
+.venv
+_pycache_
