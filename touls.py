@@ -1,56 +1,105 @@
 import os
 import tkinter as tk
+import sqlite3
+import re
 import bcrypt
 import random
 import string
 import base64
 from cryptography.fernet import Fernet
 
-# Clé de chiffrement
-key = b'"\xb7\x1b\x11\xc8E"\xc4w/o\xa8\xcf\xb6:\xac\x14fx\xfb\xcbx\x84\xf2\x03\xd3~\xf1\xa0kn\x17' 
 
+def get_key():
+    try:
+        # Connexion à la base de données
+        conn = sqlite3.connect("PM.db")
+        cursor = conn.cursor()
+
+        # Exécuter une requête pour récupérer le mot de passe correspondant à l'utilisateur
+        cursor.execute("SELECT value FROM configs WHERE key=?", ('KEY',))
+        row = cursor.fetchone()
+
+        # Vérifier si un enregistrement a été trouvé
+        if row:
+            return row[0]  # Renvoyer la valeur
+
+    except sqlite3.Error as e:
+        tk.messagebox.showerror("Error",f"Error while retrieving the key {e}")
+
+    finally:
+        if conn:
+            conn.close()
+
+    return None  # Renvoyer None si aucun mot de passe n'a été trouvé
+
+def add_new_key(key):
+    try:
+        conn = sqlite3.connect("PM.db")
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO configs (key,value) VALUES (?,?)", ('KEY',key))
+        conn.commit()
+        return True
+    except sqlite3.Error as e:
+        tk.messagebox.showerror("Error", f"Database error: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+def init_key():
+    try:
+        if not get_key():
+            key = generate_key(32)
+            add_new_key(key)
+            print(key)
+
+    except sqlite3.Error as e:
+        tk.messagebox.showerror("Error", f"Database error: {e}")
 
 # Générer une clé robuste
-def generer_cle_robuste(longueur=32):
-    return os.urandom(longueur)
+def generate_key(length=32):
+    return os.urandom(length)
 
-def encode_64(cle):
+def encode_64(key):
+    key = get_key()
     # Encoder la clé en base64
-    return base64.urlsafe_b64encode(cle)
+    return base64.urlsafe_b64encode(key)
 
-def decode_64(cle64):
+def decode_64(key64):
     # Décoder la clé
-    return base64.urlsafe_b64decode(cle64)
+    return base64.urlsafe_b64decode(key64)
 
 def encrypt_password(password):
+    key = get_key()
     # Encodage de la clé en base64
-    cle_encodee = encode_64(key)
+    encoded_key = encode_64(key)
     
     # Création d'un objet Fernet avec la clé encodée
-    cipher_suite = Fernet(cle_encodee)
+    fr = Fernet(encoded_key)
     
     # Chiffrement du mot de passe
-    encrypted_password = cipher_suite.encrypt(password.encode())
+    encrypted_password = fr.encrypt(password.encode())
     
     return encrypted_password
 
 # Fonction pour déchiffrer un mot de passe
 def decrypt_password(encrypted_password):
+    key = get_key()
     # Décoder la clé base64
     decoded_key = base64.urlsafe_b64encode(key)
     
     # Créer un objet Fernet avec la clé décodée
-    cipher_suite = Fernet(decoded_key)
+    fr = Fernet(decoded_key)
     
     # Décrypter le mot de passe et le décoder
-    decrypted_password = cipher_suite.decrypt(encrypted_password).decode()
+    decrypted_password = fr.decrypt(encrypted_password).decode()
     
     return decrypted_password
 
 def generate_strong_password(length=12, password_e=None):
     # Vérifier si password_e est spécifié
     if password_e is None:
-        raise ValueError("Password entry is not specified")
+        raise ValueError("Password entry is not specified !")
 
     # Chars à utiliser pour générer le mot de passe
     chars = string.ascii_letters + string.digits + string.punctuation
@@ -74,7 +123,6 @@ def generate_strong_password(length=12, password_e=None):
         password_e.delete(0, tk.END)
         password_e.insert(0, password)
 
-    print("Password:", f"[{password}]")
     return password
 
 # Fonction pour chiffrer un mot de passe
@@ -91,3 +139,32 @@ def check_password(input_password, hashed_password):
     if (not input_password or hashed_password == None ): return False
     # Vérifier si le mot de passe en texte brut correspond au mot de passe crypté
     return bcrypt.checkpw(input_password.encode(), hashed_password)
+
+def validate_username(username):
+    # Supprimer les espaces blancs au début et à la fin
+    username = username.strip()
+
+    # Vérification de la longueur minimale
+    if len(username) < 5:
+        tk.messagebox.showinfo("Info", "Username must have more than 5 characters !")
+        return False
+
+    # Vérification de la présence de caractères autorisés
+    if not re.match(r'^[a-zA-Z0-9_-]+$', username):
+        tk.messagebox.showinfo("Info", 'Special characters are not allowed except "-" and "_" !')
+        return False
+
+    return True
+
+def validate_password(password):
+    # Vérification de la longueur minimale
+    if len(password) < 12:
+        tk.messagebox.showinfo("Info", "Password must have more than 12 characters or equal !")
+        return False
+
+    # Vérification de la présence de lettres minuscules, majuscules, chiffres et caractères spéciaux
+    if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_^\s])[A-Za-z\d\W_]+$', password):
+        tk.messagebox.showinfo("Info", "Invalid password !")
+        return False
+
+    return True

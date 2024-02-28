@@ -3,7 +3,6 @@ from tkinter import messagebox  # Importer messagebox depuis tkinter
 from tkinter import ttk
 import sqlite3
 import touls as u
-import re
 import pyperclip  # Module pour copier dans le presse-papiers
 
 
@@ -13,6 +12,7 @@ def init_database():
     try:
         conn = sqlite3.connect("PM.db")
         cursor = conn.cursor()
+        # création de la table passwords si elle n'existe pas
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS passwords (
             id INTEGER PRIMARY KEY,
@@ -21,7 +21,19 @@ def init_database():
             password TEXT NOT NULL
         )
         """)
+        # Création de la table users si elle n'existe pas
+        cursor.execute('''CREATE TABLE IF NOT EXISTS users
+                        (id INTEGER PRIMARY KEY, 
+                        username TEXT NOT NULL UNIQUE, 
+                        password TEXT NOT NULL)''')
+        
+        # Création de la table configs si elle n'existe pas
+        cursor.execute('''CREATE TABLE IF NOT EXISTS configs
+                        (id INTEGER PRIMARY KEY, 
+                        key TEXT NOT NULL UNIQUE, 
+                        value TEXT NOT NULL)''')
         conn.commit()
+        u.init_key()
     except sqlite3.Error as e:
         tk.messagebox.showerror("Error", f"Database error: {e}")
     finally:
@@ -194,47 +206,13 @@ def add_password_interface(tree_e):
     # Attendre que la fenêtre modale soit fermée
     new_password_window.wait_window()
 
-def validate_username(username):
-    # Supprimer les espaces blancs au début et à la fin
-    username = username.strip()
-
-    # Vérification de la longueur minimale
-    if len(username) < 5:
-        tk.messagebox.showinfo("Info", "Username must have more than 5 characters !")
-        return False
-
-    # Vérification de la présence de caractères autorisés
-    if not re.match(r'^[a-zA-Z0-9_-]+$', username):
-        tk.messagebox.showinfo("Info", 'Special characters are not allowed except "-" and "_" !')
-        return False
-
-    return True
-
-def validate_password(password):
-    # Vérification de la longueur minimale
-    if len(password) < 9:
-        tk.messagebox.showinfo("Info", "Password must have more than 9 characters or equal !")
-        return False
-
-    # Vérification de la présence de lettres minuscules, majuscules, chiffres et caractères spéciaux
-    if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_^\s])[A-Za-z\d\W_]+$', password):
-        tk.messagebox.showinfo("Info", "Invalid password !")
-        return False
-
-    return True
-
 def register_user(username, password,register_window):
-    if validate_username(username) and validate_password(password):
+    if u.validate_username(username) and u.validate_password(password):
         try:
             # Connexion à la base de données
             conn = sqlite3.connect("PM.db")
             cursor = conn.cursor()
 
-            # Création de la table si elle n'existe pas
-            cursor.execute('''CREATE TABLE IF NOT EXISTS users
-                            (id INTEGER PRIMARY KEY, 
-                           username TEXT NOT NULL UNIQUE, 
-                           password TEXT NOT NULL)''')
             encrypt_pass = u.encrypt_password_for_user(password)
             # Insertion de l'utilisateur dans la table
             cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, encrypt_pass))
@@ -250,11 +228,11 @@ def register_user(username, password,register_window):
 # Fonction pour ajouter un mot de passe à la base de données
 def add_password(site, username, password):
     # valider l'identifiant
-    if not validate_username(username):
+    if not u.validate_username(username):
         return False
     
     # valider le mot de passe
-    if not validate_password(password):
+    if not u.validate_password(password):
         return False
     
     encrypted_password = u.encrypt_password(password)
@@ -295,11 +273,11 @@ def get_passwords():
 def update_password(entry_id,new_site, new_username, new_password):
     if entry_id and new_site and new_username and new_password:
         # valider l'identifiant
-        if not validate_username(new_username):
+        if not u.validate_username(new_username):
             return False
         
         # valider le mot de passe
-        if not validate_password(new_password):
+        if not u.validate_password(new_password):
             return False
         
         # Chiffrer le nouveau mot de passe
@@ -439,7 +417,6 @@ def update_entry(tree_e):
     else:
         tk.messagebox.showinfo("Info","No item selected in the TreeView.")
 
-
 def delete_entry(tree_e):
     # Récupérer l'élément sélectionné dans la TreeView
     item_id = tree_e.focus()
@@ -466,7 +443,6 @@ def delete_entry(tree_e):
             tk.messagebox.showinfo("Info","No value associated with this item in the TreeView.")
     else:
         tk.messagebox.showinfo("Info","No item selected in the TreeView.")
-
 
 def copy_username(tree):
     selected_item = tree.selection()
