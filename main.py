@@ -1,18 +1,16 @@
 import tkinter as tk
-from tkinter import messagebox  # Importer messagebox depuis tkinter
+from tkinter import messagebox  # Import messagebox from tkinter
 from tkinter import ttk
 import sqlite3
 import touls as u
-import pyperclip  # Module pour copier dans le presse-papiers
+import pyperclip  # Module to copy to clipboard
 
-
-
-# Fonction pour initialiser la base de données
+# Function to initialize the database
 def init_database():
     try:
         conn = sqlite3.connect("PM.db")
         cursor = conn.cursor()
-        # création de la table passwords si elle n'existe pas
+        # create passwords table if not exist
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS passwords (
             id INTEGER PRIMARY KEY,
@@ -21,13 +19,13 @@ def init_database():
             password TEXT NOT NULL
         )
         """)
-        # Création de la table users si elle n'existe pas
+        # create users table if not exist
         cursor.execute('''CREATE TABLE IF NOT EXISTS users
                         (id INTEGER PRIMARY KEY, 
                         username TEXT NOT NULL UNIQUE, 
                         password TEXT NOT NULL)''')
         
-        # Création de la table configs si elle n'existe pas
+        # create configs table if not exist
         cursor.execute('''CREATE TABLE IF NOT EXISTS configs
                         (id INTEGER PRIMARY KEY, 
                         key TEXT NOT NULL UNIQUE, 
@@ -45,7 +43,7 @@ def login_interface():
     login_window.title("Connection interface")
     login_window.geometry('350x200')
 
-    # Verrouiller les dimensions de la fenêtre principale
+    # Lock login window dimensions
     login_window.resizable(False, False)
 
     login_frame = tk.Frame(login_window)
@@ -72,7 +70,7 @@ def register_interface():
     register_window.title("User Registration")
     register_window.geometry('350x200')
 
-    # Verrouiller les dimensions de la fenêtre principale
+    # Lock register window dimensions
     register_window.resizable(False, False)
 
     register_frame = tk.Frame(register_window)
@@ -89,7 +87,7 @@ def register_interface():
     password_entry = ttk.Entry(register_frame, show="*")
     password_entry.grid(row=2, column=1, sticky="w")
 
-    # Fonction pour basculer l'affichage du mot de passe
+    # Function to toggle password display
     def toggle_password():
         cheked = show_password_var.get()
         if cheked == 1:
@@ -97,7 +95,7 @@ def register_interface():
         else:
             password_entry.config(show="*")
 
-    # Case à cocher pour montrer/cacher le mot de passe
+    # Checkbox to show/hide password
     show_password_var = tk.BooleanVar()
     show_password_checkbox = ttk.Checkbutton(register_frame, text="Show password", variable=show_password_var, command=toggle_password)
     show_password_checkbox.grid(row=3, column=1, sticky="w")
@@ -107,30 +105,30 @@ def register_interface():
     ttk.Button(register_frame, text="Generate", 
                command=lambda: u.generate_strong_password(12, password_entry)).grid(row=2, column=2, padx=10)
     
-    # Bloquer l'accès à la fenêtre principale jusqu'à ce que la fenêtre modale soit fermée
+    # Block access to main window until modal window is closed
     register_frame.grab_set()
 
-    # Attendre que la fenêtre modale soit fermée
+    # Wait for the modal window to close
     register_window.wait_window()
 
 def update_password_interface(id,site_e,username_e,password_e,tree_e):
-    # Création de la fenêtre "update password"
+    # Create the update password window
     update_password_window = tk.Toplevel()
     update_password_window.title("Edit password")
     update_password_window.geometry("350x200")
 
-    # Verrouiller les dimensions de la fenêtre principale
+    # Lock update window dimensions
     update_password_window.resizable(False, False)
 
-    # Création du style
+    # Create style
     style = ttk.Style()
     style.configure("TButton", foreground="black", background="lightgrey")
 
-    # Création du cadre principal
+    # Create principal frame
     update_password_frame = ttk.Frame(update_password_window)
     update_password_frame.pack(padx=20, pady=20, fill=tk.BOTH, expand=True)
 
-    # Création des libellés et des entrées
+    # Create labels and entries
     ttk.Label(update_password_frame, text="Site:").grid(row=0, column=0, pady=10, sticky="e")
     site_entry = ttk.Entry(update_password_frame)
     site_entry.grid(row=0, column=1, padx=10, sticky="w")
@@ -146,7 +144,7 @@ def update_password_interface(id,site_e,username_e,password_e,tree_e):
     password_entry.grid(row=2, column=1, padx=10, sticky="w")
     password_entry.insert(tk.END, password_e)
 
-    # Création des boutons
+    # Create buttons
     generate_button = ttk.Button(update_password_frame, text="Generate", 
                                  command=lambda: u.generate_strong_password(12, password_entry))
     generate_button.grid(row=3, column=0, pady=10, padx=10, sticky="w")
@@ -155,10 +153,10 @@ def update_password_interface(id,site_e,username_e,password_e,tree_e):
                             command=lambda: edit_password(id,site_entry.get(), username_entry.get(), password_entry.get(),update_password_window,tree_e))
     add_button.grid(row=3, column=1, pady=10, padx=10, sticky="e")
     
-    # Bloquer l'accès à la fenêtre principale jusqu'à ce que la fenêtre modale soit fermée
+    # Block access to update password window until modal window is closed
     update_password_window.grab_set()
 
-    # Attendre que la fenêtre modale soit fermée
+    # Wait for the modal window to close
     update_password_window.wait_window()
 
 def add_password_interface(tree_e):
@@ -284,27 +282,21 @@ def update_password(entry_id,new_site, new_username, new_password):
         encrypted_password = u.encrypt_password(new_password)
 
         try:
-            # Connexion à la base de données
             conn = sqlite3.connect("PM.db")
             cursor = conn.cursor()
 
-            # Exécuter la requête de mise à jour
             cursor.execute("UPDATE passwords SET site=?, username=?, password=? WHERE id=?", 
                         (new_site, new_username, encrypted_password, entry_id))
             
-            # Valider la transaction
             conn.commit()
             return True
         except sqlite3.Error as e:
-            # Afficher une erreur en cas d'échec de la mise à jour
             tk.messagebox.showerror("Error", f"Database error: {e}")
             return False
         finally:
-            # Fermer la connexion à la base de données
             if conn:
                 conn.close()
     else:
-        # Afficher un message d'information
         tk.messagebox.showinfo("Info", "One or more fields are empty !")
         return False
 
@@ -513,7 +505,6 @@ def main_window():
 
     main_window.mainloop()
 
-# Lancer l'interface de connexion
 if __name__ == "__main__":
     init_database()
     login_interface()

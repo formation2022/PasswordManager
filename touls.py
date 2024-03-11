@@ -8,7 +8,6 @@ import string
 import base64
 from cryptography.fernet import Fernet
 
-
 def get_key():
     try:
         # Connexion à la base de données
@@ -56,7 +55,6 @@ def init_key():
     except sqlite3.Error as e:
         tk.messagebox.showerror("Error", f"Database error: {e}")
 
-# Générer une clé robuste
 def generate_key(length=32):
     return os.urandom(length)
 
@@ -82,7 +80,6 @@ def encrypt_password(password):
     
     return encrypted_password
 
-# Fonction pour déchiffrer un mot de passe
 def decrypt_password(encrypted_password):
     key = get_key()
     # Décoder la clé base64
@@ -125,7 +122,6 @@ def generate_strong_password(length=12, password_e=None):
 
     return password
 
-# Fonction pour chiffrer un mot de passe
 def encrypt_password_for_user(password):
     # Générer un salt aléatoire
     salt = bcrypt.gensalt()
