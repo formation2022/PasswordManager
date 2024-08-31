@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox  # Import messagebox from tkinter
 from tkinter import ttk
 import sqlite3
-import touls as u
+import tools as t
 import pyperclip  # Module to copy to clipboard
 
 # Function to initialize the database
@@ -31,7 +31,7 @@ def init_database():
                         key TEXT NOT NULL UNIQUE, 
                         value TEXT NOT NULL)''')
         conn.commit()
-        u.init_key()
+        t.init_key()
     except sqlite3.Error as e:
         tk.messagebox.showerror("Error", f"Database error: {e}")
     finally:
@@ -103,7 +103,7 @@ def register_interface():
     ttk.Button(register_frame, text="Register", 
                command=lambda: register_user(username_entry.get(), password_entry.get(), register_window)).grid(row=4, column=1, sticky='nesw',pady=20)
     ttk.Button(register_frame, text="Generate", 
-               command=lambda: u.generate_strong_password(12, password_entry)).grid(row=2, column=2, padx=10)
+               command=lambda: t.generate_strong_password(12, password_entry)).grid(row=2, column=2, padx=10)
     
     # Block access to main window until modal window is closed
     register_frame.grab_set()
@@ -146,7 +146,7 @@ def update_password_interface(id,site_e,username_e,password_e,tree_e):
 
     # Create buttons
     generate_button = ttk.Button(update_password_frame, text="Generate", 
-                                 command=lambda: u.generate_strong_password(12, password_entry))
+                                 command=lambda: t.generate_strong_password(12, password_entry))
     generate_button.grid(row=3, column=0, pady=10, padx=10, sticky="w")
 
     add_button = ttk.Button(update_password_frame, text="Update", 
@@ -191,7 +191,7 @@ def add_password_interface(tree_e):
 
     # Création des boutons
     generate_button = ttk.Button(new_password_frame, text="Generate", 
-                                 command=lambda: u.generate_strong_password(12, password_entry))
+                                 command=lambda: t.generate_strong_password(12, password_entry))
     generate_button.grid(row=3, column=0, pady=10, padx=10, sticky="w")
 
     add_button = ttk.Button(new_password_frame, text="Add", 
@@ -205,13 +205,13 @@ def add_password_interface(tree_e):
     new_password_window.wait_window()
 
 def register_user(username, password,register_window):
-    if u.validate_username(username) and u.validate_password(password):
+    if t.validate_username(username) and t.validate_password(password):
         try:
             # Connexion à la base de données
             conn = sqlite3.connect("PM.db")
             cursor = conn.cursor()
 
-            encrypt_pass = u.encrypt_password_for_user(password)
+            encrypt_pass = t.encrypt_password_for_user(password)
             # Insertion de l'utilisateur dans la table
             cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, encrypt_pass))
             conn.commit()
@@ -223,21 +223,21 @@ def register_user(username, password,register_window):
             if conn:
                 conn.close()
 
-# Fonction pour ajouter un mot de passe à la base de données
 def add_password(site, username, password):
     # valider l'identifiant
-    if not u.validate_username(username):
+    if not t.validate_username(username):
         return False
     
     # valider le mot de passe
-    if not u.validate_password(password):
+    if not t.validate_password(password):
         return False
     
-    encrypted_password = u.encrypt_password(password)
+    encrypted_password = t.encrypt_password(password)
     try:
         conn = sqlite3.connect("PM.db")
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO passwords (site, username, password) VALUES (?, ?, ?)", (site, username, encrypted_password))
+        cursor.execute("INSERT INTO passwords (site, username, password) VALUES (?, ?, ?)", 
+                       (site, username, encrypted_password))
         conn.commit()
         return True
     except sqlite3.Error as e:
@@ -257,12 +257,14 @@ def get_passwords():
 
         for row in rows:
             try:
-                password = u.decrypt_password(row[3])
+                password = t.decrypt_password(row[3])
                 passwords.append((row[0],row[1], row[2], password))
             except Exception as e:
+                print(e)
                 tk.messagebox.showerror("Error", f"Error decrypting password: {e}")
         return passwords
     except sqlite3.Error as e:
+        print(e)
         tk.messagebox.showerror("Error", f"Database error: {e}")
     finally:
         if conn:
@@ -271,23 +273,19 @@ def get_passwords():
 def update_password(entry_id,new_site, new_username, new_password):
     if entry_id and new_site and new_username and new_password:
         # valider l'identifiant
-        if not u.validate_username(new_username):
+        if not t.validate_username(new_username):
             return False
-        
         # valider le mot de passe
-        if not u.validate_password(new_password):
+        if not t.validate_password(new_password):
             return False
-        
         # Chiffrer le nouveau mot de passe
-        encrypted_password = u.encrypt_password(new_password)
-
+        encrypted_password = t.encrypt_password(new_password)
         try:
             conn = sqlite3.connect("PM.db")
             cursor = conn.cursor()
 
             cursor.execute("UPDATE passwords SET site=?, username=?, password=? WHERE id=?", 
                         (new_site, new_username, encrypted_password, entry_id))
-            
             conn.commit()
             return True
         except sqlite3.Error as e:
@@ -309,13 +307,12 @@ def edit_password(id,site,username,password,w_e,tree_e):
         # Afficher un message d'information
         tk.messagebox.showinfo("Info", "One or more fields are empty")
 
-#Fonction pour gérer la connexion
 def login(username,password,login_window):
     # Récupérer les informations de connexion
     password_from_database = get_password_from_database(username)
     if(username and password):
         # Vérifier si les informations sont correctes
-        if u.check_password(password, password_from_database):
+        if t.check_password(password, password_from_database):
             # fermer la fenêtre login
             login_window.destroy()
             # Ouvrir l'interface principale
@@ -324,7 +321,6 @@ def login(username,password,login_window):
             # Afficher un message d'erreur
             tk.messagebox.showerror("Error", "Invalid username or password")
 
-# Fonction pour ajouter un nouveau mot de passe
 def add_new_password(site,username,password,fn,tree_e):
     if site and username and password:
         if add_password(site, username, password):
@@ -386,7 +382,7 @@ def create_table(tree_e):
 
         # Ajouter les données à la table
         for row in passwords:
-            tree_e.insert("", tk.END, text=row[0], values=(row[0],row[1],row[2], row[3]))
+            tree_e.insert("", tk.END, text=row[0], values=(row[0],row[1],row[2], '*********', row[3]))
 
 def add_entry(tree_e):
     # Fonction pour ajouter une entrée
@@ -447,7 +443,7 @@ def copy_username(tree):
 def copy_password(tree):
     selected_item = tree.selection()
     if selected_item:
-        password = tree.item(selected_item)["values"][3]
+        password = tree.item(selected_item)["values"][4]
         pyperclip.copy(password)
     else:
         tk.messagebox.showinfo("Info","No item selected in the TreeView.")
@@ -469,11 +465,19 @@ def main_window():
     tree_frame = ttk.Frame(main_window)
     tree_frame.pack(side=tk.LEFT, fill=tk.Y)
 
-    tree = ttk.Treeview(tree_frame, columns=("ID","Site", "Username", "Password"), show="headings")
+    tree = ttk.Treeview(tree_frame, columns=("ID","Site", "Username", "Password","PasswordText"), show="headings")
     tree.heading("ID", text="#")
     tree.heading("Site", text="Site")
     tree.heading("Username", text="Username")
     tree.heading("Password", text="Password")
+    tree.heading("PasswordText", text="Password")
+    
+    # Masquer la colonne "PasswordText" dans l'en-tête
+    tree["displaycolumns"] = ("ID", "Site", "Username", "Password")
+    
+    # Centrer le texte dans la colonne PasswordText
+    tree.heading("Password", text="Password", anchor="center")
+    tree.heading("Username", text="Username", anchor="center")
     tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
     create_table(tree)  # Créer la table de données

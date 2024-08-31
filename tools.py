@@ -3,9 +3,10 @@ import tkinter as tk
 import sqlite3
 import re
 import bcrypt
-import random
+import secrets
 import string
 import base64
+import random
 from cryptography.fernet import Fernet
 
 def get_key():
@@ -20,7 +21,7 @@ def get_key():
 
         # Vérifier si un enregistrement a été trouvé
         if row:
-            return row[0]  # Renvoyer la valeur
+            return row[0]  # Renvoyer la valeur encodée en base64
 
     except sqlite3.Error as e:
         tk.messagebox.showerror("Error",f"Error while retrieving the key {e}")
@@ -29,7 +30,7 @@ def get_key():
         if conn:
             conn.close()
 
-    return None  # Renvoyer None si aucun mot de passe n'a été trouvé
+    return None 
 
 def add_new_key(key):
     try:
@@ -49,29 +50,31 @@ def init_key():
     try:
         if not get_key():
             key = generate_key(32)
-            add_new_key(key)
-            print(key)
+            encode_key_64 = encode_64(key)
+            add_new_key(encode_key_64)
 
-    except sqlite3.Error as e:
-        tk.messagebox.showerror("Error", f"Database error: {e}")
+    except Exception as e:
+        tk.messagebox.showerror("Error", f"init_key error: {e}")
 
 def generate_key(length=32):
-    return os.urandom(length)
+    key = secrets.token_bytes(length)
+    print("Generated key: ",key)
+    return key
 
 def encode_64(key):
-    key = get_key()
+    key64 = base64.urlsafe_b64encode(key).decode('utf-8')
+    print("Encoded key: ",key64)
     # Encoder la clé en base64
-    return base64.urlsafe_b64encode(key)
+    return key64
 
 def decode_64(key64):
+    key = base64.urlsafe_b64decode(key64.encode('utf-8'))
+    print("Decoded key: ",key)
     # Décoder la clé
-    return base64.urlsafe_b64decode(key64)
+    return key
 
 def encrypt_password(password):
-    key = get_key()
-    # Encodage de la clé en base64
-    encoded_key = encode_64(key)
-    
+    encoded_key = get_key()
     # Création d'un objet Fernet avec la clé encodée
     fr = Fernet(encoded_key)
     
@@ -81,13 +84,10 @@ def encrypt_password(password):
     return encrypted_password
 
 def decrypt_password(encrypted_password):
-    key = get_key()
-    # Décoder la clé base64
-    decoded_key = base64.urlsafe_b64encode(key)
-    
+    encoded_key = get_key()
+
     # Créer un objet Fernet avec la clé décodée
-    fr = Fernet(decoded_key)
-    
+    fr = Fernet(encoded_key)
     # Décrypter le mot de passe et le décoder
     decrypted_password = fr.decrypt(encrypted_password).decode()
     
