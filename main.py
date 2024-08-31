@@ -33,7 +33,7 @@ def init_database():
         conn.commit()
         t.init_key()
     except sqlite3.Error as e:
-        tk.messagebox.showerror("Error", f"Database error: {e}")
+        messagebox.showerror("Error", f"Database error: {e}")
     finally:
         if conn:
             conn.close()
@@ -216,9 +216,9 @@ def register_user(username, password,register_window):
             cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, encrypt_pass))
             conn.commit()
             register_window.destroy()
-            tk.messagebox.showinfo("Success", "User registered successfully!")
+            messagebox.showinfo("Success", "User registered successfully!")
         except sqlite3.Error as e:
-            tk.messagebox.showerror("Error", f"Database error: {e}")
+            messagebox.showerror("Error", f"Database error: {e}")
         finally:
             if conn:
                 conn.close()
@@ -241,7 +241,7 @@ def add_password(site, username, password):
         conn.commit()
         return True
     except sqlite3.Error as e:
-        tk.messagebox.showerror("Error", f"Database error: {e}")
+        messagebox.showerror("Error", f"Database error: {e}")
         return False
     finally:
         if conn:
@@ -260,12 +260,12 @@ def get_passwords():
                 password = t.decrypt_password(row[3])
                 passwords.append((row[0],row[1], row[2], password))
             except Exception as e:
-                print(e)
-                tk.messagebox.showerror("Error", f"Error decrypting password: {e}")
+                # print(e)
+                messagebox.showerror("Error", f"Error decrypting password: {e}")
         return passwords
     except sqlite3.Error as e:
-        print(e)
-        tk.messagebox.showerror("Error", f"Database error: {e}")
+        # print(e)
+        messagebox.showerror("Error", f"Database error: {e}")
     finally:
         if conn:
             conn.close()
@@ -295,7 +295,7 @@ def update_password(entry_id,new_site, new_username, new_password):
             if conn:
                 conn.close()
     else:
-        tk.messagebox.showinfo("Info", "One or more fields are empty !")
+        messagebox.showinfo("Info", "One or more fields are empty !")
         return False
 
 def edit_password(id,site,username,password,w_e,tree_e):
@@ -305,7 +305,7 @@ def edit_password(id,site,username,password,w_e,tree_e):
             create_table(tree_e)
     else:
         # Afficher un message d'information
-        tk.messagebox.showinfo("Info", "One or more fields are empty")
+        messagebox.showinfo("Info", "One or more fields are empty")
 
 def login(username,password,login_window):
     # Récupérer les informations de connexion
@@ -319,7 +319,7 @@ def login(username,password,login_window):
             main_window()
         else:
             # Afficher un message d'erreur
-            tk.messagebox.showerror("Error", "Invalid username or password")
+            messagebox.showerror("Error", "Invalid username or password")
 
 def add_new_password(site,username,password,fn,tree_e):
     if site and username and password:
@@ -328,7 +328,7 @@ def add_new_password(site,username,password,fn,tree_e):
             create_table(tree_e)
     else:
         # Afficher un message d'information
-        tk.messagebox.showinfo("Info", "One or more fields are empty")
+        messagebox.showinfo("Info", "One or more fields are empty")
 
 def get_password_from_database(username):
     try:
@@ -345,7 +345,7 @@ def get_password_from_database(username):
             return row[0]  # Renvoyer le mot de passe trouvé
 
     except sqlite3.Error as e:
-        tk.messagebox.showerror("Error",f"Error while retrieving the password {e}")
+        messagebox.showerror("Error",f"Error while retrieving the password {e}")
 
     finally:
         if conn:
@@ -367,7 +367,7 @@ def delete_password(entry_id):
         return True
     except sqlite3.Error as e:
         # Afficher une erreur en cas d'échec de la suppression
-        tk.messagebox.showerror("Error", f"Database error: {e}")
+        messagebox.showerror("Error", f"Database error: {e}")
         return False
     finally:
         # Fermer la connexion à la base de données
@@ -401,9 +401,9 @@ def update_entry(tree_e):
         if values:
             update_password_interface(values[0],values[1],values[2],values[3],tree_e)
         else:
-            tk.messagebox.showinfo("Info","No value associated with this item in the TreeView.")
+            messagebox.showinfo("Info","No value associated with this item in the TreeView.")
     else:
-        tk.messagebox.showinfo("Info","No item selected in the TreeView.")
+        messagebox.showinfo("Info","No item selected in the TreeView.")
 
 def delete_entry(tree_e):
     # Récupérer l'élément sélectionné dans la TreeView
@@ -417,7 +417,7 @@ def delete_entry(tree_e):
         # Vérifier si des valeurs ont été récupérées
         if values:
             # Demander une confirmation à l'utilisateur avant de supprimer l'entrée
-            confirmation = tk.messagebox.askyesno("Confirmation", "Do you really want to delete this item ?")
+            confirmation = messagebox.askyesno("Confirmation", "Do you really want to delete this item ?")
 
             if confirmation:
                 # Supprimer l'entrée de la base de données
@@ -426,11 +426,11 @@ def delete_entry(tree_e):
                     tree_e.delete(item_id)
                     create_table(tree_e)
                     # Afficher un message de confirmation
-                    tk.messagebox.showinfo("Success","The item has been successfully deleted.")
+                    messagebox.showinfo("Success","The item has been successfully deleted.")
         else:
-            tk.messagebox.showinfo("Info","No value associated with this item in the TreeView.")
+            messagebox.showinfo("Info","No value associated with this item in the TreeView.")
     else:
-        tk.messagebox.showinfo("Info","No item selected in the TreeView.")
+        messagebox.showinfo("Info","No item selected in the TreeView.")
 
 def copy_username(tree):
     selected_item = tree.selection()
@@ -438,7 +438,7 @@ def copy_username(tree):
         username = tree.item(selected_item)["values"][2]
         pyperclip.copy(username)
     else:
-        tk.messagebox.showinfo("Info","No item selected in the TreeView.")
+        messagebox.showinfo("Info","No item selected in the TreeView.")
 
 def copy_password(tree):
     selected_item = tree.selection()
@@ -446,23 +446,23 @@ def copy_password(tree):
         password = tree.item(selected_item)["values"][4]
         pyperclip.copy(password)
     else:
-        tk.messagebox.showinfo("Info","No item selected in the TreeView.")
+        messagebox.showinfo("Info","No item selected in the TreeView.")
 
 def main_window():
     # Créer la fenêtre principale
-    main_window = tk.Tk()
-    main_window.title("Password Manager")
-    main_window.geometry("950x600")
+    fn_main_window = tk.Tk()
+    fn_main_window.title("Password Manager")
+    fn_main_window.geometry("950x600")
 
     # Verrouiller les dimensions de la fenêtre principale
-    main_window.resizable(False, False)
+    fn_main_window.resizable(False, False)
 
     # Création du style
     style = ttk.Style()
     style.configure("TButton", foreground="black", background="lightgrey")
 
     # Création de la table de données à gauche
-    tree_frame = ttk.Frame(main_window)
+    tree_frame = ttk.Frame(fn_main_window)
     tree_frame.pack(side=tk.LEFT, fill=tk.Y)
 
     tree = ttk.Treeview(tree_frame, columns=("ID","Site", "Username", "Password","PasswordText"), show="headings")
@@ -483,7 +483,7 @@ def main_window():
     create_table(tree)  # Créer la table de données
 
     # Création des boutons à droite
-    button_frame = ttk.Frame(main_window)
+    button_frame = ttk.Frame(fn_main_window)
     button_frame.pack(side=tk.RIGHT, fill=tk.Y)
 
     add_button = ttk.Button(button_frame, text="Add", command=lambda: add_entry(tree))
@@ -504,10 +504,10 @@ def main_window():
     copy_password_button.pack(pady=10, padx=20, fill=tk.X)
 
     # fermer l'application
-    quit_button = ttk.Button(button_frame, text="Quit", command= main_window.destroy)
+    quit_button = ttk.Button(button_frame, text="Quit", command= fn_main_window.destroy)
     quit_button.pack(pady=10, padx=20, fill=tk.X)
 
-    main_window.mainloop()
+    fn_main_window.mainloop()
 
 if __name__ == "__main__":
     init_database()

@@ -58,18 +58,18 @@ def init_key():
 
 def generate_key(length=32):
     key = secrets.token_bytes(length)
-    print("Generated key: ",key)
+    # print("Generated key: ",key)
     return key
 
 def encode_64(key):
     key64 = base64.urlsafe_b64encode(key).decode('utf-8')
-    print("Encoded key: ",key64)
+    # print("Encoded key: ",key64)
     # Encoder la clé en base64
     return key64
 
 def decode_64(key64):
     key = base64.urlsafe_b64decode(key64.encode('utf-8'))
-    print("Decoded key: ",key)
+    # print("Decoded key: ",key)
     # Décoder la clé
     return key
 
